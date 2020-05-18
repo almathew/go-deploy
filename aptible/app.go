@@ -8,8 +8,10 @@ import (
 )
 
 type App struct {
-	ID      int64
-	GitRepo string
+	ID        int64
+	GitRepo   string
+	Deleted   bool
+	Handle    string
 }
 
 func (c *Client) CreateApp(handle string, env_id int64) (App, error) {
@@ -32,6 +34,10 @@ func (c *Client) CreateApp(handle string, env_id int64) (App, error) {
 	}
 	app.GitRepo = *payload.GitRepo
 
+	app.Handle = handle
+
+	app.Deleted = false
+
 	return app, err
 }
 
@@ -45,25 +51,31 @@ func (c *Client) DeployApp(app_id int64, config map[string]interface{}) error {
 	return err
 }
 
-func (c *Client) GetApp(app_id int64) (bool, error) {
+func (c *Client) GetApp(app_id int64) (App, error) {
+	app := App{}
+	app.ID = app_id
+	app.Deleted = false
+
 	params := operations.NewGetAppsIDParams().WithID(app_id)
-	_, err := c.Client.Operations.GetAppsID(params, c.Token)
+	resp, err := c.Client.Operations.GetAppsID(params, c.Token)
 
 	if err != nil {
 		err_struct := err.(*operations.GetAppsIDDefault)
 		switch err_struct.Code() {
 		case 404:
-			// If deleted == true, then the app needs to be removed from Terraform.
-			return true, nil
+			app.Deleted = true
+			return app, nil
 		case 401:
 			e := fmt.Errorf("Make sure you have the correct auth token.")
-			return false, e
+			return app, e
 		default:
 			e := fmt.Errorf("There was an error when completing the request to get the app. \n[ERROR] -%s", err)
-			return false, e
+			return app, e
 		}
 	}
-	return false, err
+	app.Handle = resp.Payload.Handle
+	app.GitRepo = resp.Payload.GitRepo
+	return app, err
 }
 
 // Updates the `config` based on changes made in the config file
