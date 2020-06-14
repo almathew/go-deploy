@@ -49,7 +49,7 @@ func (c *Client) DeployApp(appID int64, config map[string]interface{}) error {
 
 func (c *Client) GetApp(appID int64) (App, error) {
 	app := App{
-		ID: appID,
+		ID:      appID,
 		Deleted: false,
 	}
 
@@ -60,6 +60,7 @@ func (c *Client) GetApp(appID int64) (App, error) {
 		errStruct := err.(*operations.GetAppsIDDefault)
 		switch errStruct.Code() {
 		case 404:
+
 			// If deleted == true, then the app needs to be removed from Terraform.
 			app.Deleted = true
 			return app, nil
