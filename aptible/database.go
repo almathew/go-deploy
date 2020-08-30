@@ -20,6 +20,7 @@ type Database struct {
 	InitializeFromID int64
 	Service          Service
 	DatabaseImage    DatabaseImage
+	Credentials      []DatabaseCredential
 }
 
 type DBUpdates struct {
@@ -155,6 +156,12 @@ func (c *Client) GetDatabase(databaseID int64) (Database, error) {
 		}
 		database.Service = service
 	}
+
+	credentials, err := c.GetDatabaseCredentials(databaseID)
+	if err != nil {
+		return database, err
+	}
+	database.Credentials = credentials
 
 	return database, nil
 }
